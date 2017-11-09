@@ -14,7 +14,7 @@ import tflib.ops.conv2d
 import tflib.ops.batchnorm
 import tflib.ops.deconv2d
 import tflib.save_images
-import tflib.celebA_64x64
+import tflib.fruit_100x100
 import tflib.small_imagenet
 import tflib.ops.layernorm
 import tflib.plot
@@ -54,7 +54,7 @@ CRITIC_ITERS = 5 # How many iterations to train the critic for
 N_GPUS = 1 # Number of GPUs
 BATCH_SIZE = 16 # Batch size. Must be a multiple of N_GPUS
 INPUT_DIM = 16*16*3 # Number of pixels in each input
-OUTPUT_DIM = 64*64*3 # Number of pixels in each iamge
+OUTPUT_DIM = 100*100*3 # Number of pixels in each iamge
 DELETE_TRAIN_DIR=True
 
 lib.print_model_settings(locals().copy())
@@ -398,7 +398,8 @@ def FCDiscriminator(inputs, FC_DIM=512, n_layers=3):
     return tf.reshape(output, [-1])
 
 def DCGANDiscriminator(inputs, dim=DIM, bn=True, nonlinearity=LeakyReLU):
-    output = tf.reshape(inputs, [-1, 3, 64, 64])
+    #output = tf.reshape(inputs, [-1, 3, 64, 64])
+    output = tf.reshape(inputs, [-1, 3, 100, 100])
 
     lib.ops.conv2d.set_weights_stdev(0.02)
     lib.ops.deconv2d.set_weights_stdev(0.02)

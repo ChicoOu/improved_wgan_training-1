@@ -6,7 +6,7 @@ L1_WEIGHT=0.1
 MODEL=wgan
 ARCH=5 # 0: DCGAN, 1: DCGAN-BN, 2: MLP
 
-python gan_SR.py \
+python3 gan_SR.py \
        --mode=$MODEL \
        --architecture=$ARCH \
        --summary_dir=summary/$RUNNUM \
@@ -18,4 +18,4 @@ python gan_SR.py \
        2> err.log
 
 # finish
-sudo shutdown -h now
+#sudo shutdown -h now
