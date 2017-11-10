@@ -19,6 +19,7 @@ import tflib.small_imagenet
 import tflib.ops.layernorm
 import tflib.plot
 
+image_size = 100
 FLAGS = tf.app.flags.FLAGS
 
 # Configurations
@@ -35,8 +36,9 @@ tf.app.flags.DEFINE_integer('architecture', 0, "index of architecture")
 
 # Download 64x64 ImageNet at http://image-net.org/small/download.php and
 # fill in the path to the extracted files here!
-import sys
-FLAGS(sys.argv)
+#import sys
+#FLAGS(sys.argv)
+TEST_DIR = './fruitrecogndatasetnew/002orange/test'
 DATA_DIR = FLAGS.data_dir  # 'data/celebA_64X64'
 SUMMARY_DIR = FLAGS.summary_dir
 GEN_L1_WEIGHT = FLAGS.gen_l1_weight # Weighting factor for L1 difference in generator loss
@@ -48,13 +50,13 @@ LAMBDA = FLAGS.LAMBDA # Gradient penalty lambda hyperparameter
 if len(DATA_DIR) == 0:
     raise Exception('Please specify path to data directory in gan_64x64.py!')
 
-DIM = 64 # Model dimensionality
+DIM = 100 # Model dimensionality
 K = 4 # How much to downsample
 CRITIC_ITERS = 5 # How many iterations to train the critic for
 N_GPUS = 1 # Number of GPUs
 BATCH_SIZE = 16 # Batch size. Must be a multiple of N_GPUS
 INPUT_DIM = 16*16*3 # Number of pixels in each input
-OUTPUT_DIM = 100*100*3 # Number of pixels in each iamge
+OUTPUT_DIM = image_size*image_size*3 # Number of pixels in each iamge
 DELETE_TRAIN_DIR=True
 
 lib.print_model_settings(locals().copy())
@@ -399,7 +401,7 @@ def FCDiscriminator(inputs, FC_DIM=512, n_layers=3):
 
 def DCGANDiscriminator(inputs, dim=DIM, bn=True, nonlinearity=LeakyReLU):
     #output = tf.reshape(inputs, [-1, 3, 64, 64])
-    output = tf.reshape(inputs, [-1, 3, 100, 100])
+    output = tf.reshape(inputs, [-1, 3, image_size, image_size])
 
     lib.ops.conv2d.set_weights_stdev(0.02)
     lib.ops.deconv2d.set_weights_stdev(0.02)
@@ -457,7 +459,7 @@ Generator, Discriminator = GeneratorAndDiscriminator()
 
 with tf.Session(config=tf.ConfigProto(allow_soft_placement=True)) as session:
 
-    all_real_data_conv = tf.placeholder(tf.int32, shape=[BATCH_SIZE, 3, 64, 64])
+    all_real_data_conv = tf.placeholder(tf.int32, shape=[BATCH_SIZE, 3, image_size, image_size])
     if tf.__version__.startswith('1.'):
         split_real_data_conv = tf.split(all_real_data_conv, len(DEVICES))
     else:
@@ -467,69 +469,69 @@ with tf.Session(config=tf.ConfigProto(allow_soft_placement=True)) as session:
     gen_costs, disc_costs = [],[]
 
     for device_index, (device, real_data_conv) in enumerate(zip(DEVICES, split_real_data_conv)):
-        with tf.device(device):
-            real_data = 2*((tf.cast(real_data_conv, tf.float32)/255.)-.5)
-            real_data = tf.reshape(real_data, [BATCH_SIZE//len(DEVICES), OUTPUT_DIM])
-            # downsampled (by K) as generator input
-            real_data_downsampled = downsample(real_data)
-            fake_data = Generator(BATCH_SIZE//len(DEVICES), noise=real_data_downsampled)
-            
-            disc_real = Discriminator(real_data)
-            disc_fake = Discriminator(fake_data)
+    #    with tf.device(device):
+        real_data = 2*((tf.cast(real_data_conv, tf.float32)/255.)-.5)
+        real_data = tf.reshape(real_data, [BATCH_SIZE//len(DEVICES), OUTPUT_DIM])
+        # downsampled (by K) as generator input
+        real_data_downsampled = downsample(real_data)
+        fake_data = Generator(BATCH_SIZE//len(DEVICES), noise=real_data_downsampled)
 
-            if MODE == 'wgan':
-                gen_cost = tf.reduce_mean(disc_fake)
-                disc_cost = tf.reduce_mean(disc_real) - tf.reduce_mean(disc_fake)
+        disc_real = Discriminator(real_data)
+        disc_fake = Discriminator(fake_data)
 
-            elif MODE == 'wgan-gp':
-                gen_cost = tf.reduce_mean(disc_fake)
-                disc_cost = tf.reduce_mean(disc_real) - tf.reduce_mean(disc_fake)
+        if MODE == 'wgan':
+            gen_cost = tf.reduce_mean(disc_fake)
+            disc_cost = tf.reduce_mean(disc_real) - tf.reduce_mean(disc_fake)
 
-                alpha = tf.random_uniform(
-                    shape=[BATCH_SIZE//len(DEVICES),1], 
-                    minval=0.,
-                    maxval=1.
-                )
-                differences = fake_data - real_data
-                interpolates = real_data + (alpha*differences)
-                gradients = tf.gradients(Discriminator(interpolates), [interpolates])[0]
-                slopes = tf.sqrt(tf.reduce_sum(tf.square(gradients), reduction_indices=[1]))
-                gradient_penalty = tf.reduce_mean((slopes-1.)**2)
-                disc_cost += LAMBDA*gradient_penalty
+        elif MODE == 'wgan-gp':
+            gen_cost = tf.reduce_mean(disc_fake)
+            disc_cost = tf.reduce_mean(disc_real) - tf.reduce_mean(disc_fake)
 
-            elif MODE == 'dcgan':
-                try: # tf pre-1.0 (bottom) vs 1.0 (top)
-                    gen_cost = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=disc_fake,
-                                                                                      labels=tf.ones_like(disc_fake)))
-                    disc_cost =  tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=disc_fake,
-                                                                                        labels=tf.zeros_like(disc_fake)))
-                    disc_cost += tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=disc_real,
-                                                                                        labels=tf.ones_like(disc_real)))                    
-                except Exception as e:
-                    gen_cost = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(disc_fake, tf.ones_like(disc_fake)))
-                    disc_cost =  tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(disc_fake, tf.zeros_like(disc_fake)))
-                    disc_cost += tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(disc_real, tf.ones_like(disc_real)))                    
-                disc_cost /= 2.
+            alpha = tf.random_uniform(
+                shape=[BATCH_SIZE//len(DEVICES),1],
+                minval=0.,
+                maxval=1.
+            )
+            differences = fake_data - real_data
+            interpolates = real_data + (alpha*differences)
+            gradients = tf.gradients(Discriminator(interpolates), [interpolates])[0]
+            slopes = tf.sqrt(tf.reduce_sum(tf.square(gradients), reduction_indices=[1]))
+            gradient_penalty = tf.reduce_mean((slopes-1.)**2)
+            disc_cost += LAMBDA*gradient_penalty
 
-            elif MODE == 'lsgan':
-                gen_cost = tf.reduce_mean((disc_fake - 1)**2)
-                disc_cost = (tf.reduce_mean((disc_real - 1)**2) + tf.reduce_mean((disc_fake - 0)**2))/2.
+        elif MODE == 'dcgan':
+            try: # tf pre-1.0 (bottom) vs 1.0 (top)
+                gen_cost = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=disc_fake,
+                                                                                  labels=tf.ones_like(disc_fake)))
+                disc_cost =  tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=disc_fake,
+                                                                                    labels=tf.zeros_like(disc_fake)))
+                disc_cost += tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=disc_real,
+                                                                                    labels=tf.ones_like(disc_real)))
+            except Exception as e:
+                gen_cost = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(disc_fake, tf.ones_like(disc_fake)))
+                disc_cost =  tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(disc_fake, tf.zeros_like(disc_fake)))
+                disc_cost += tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(disc_real, tf.ones_like(disc_real)))
+            disc_cost /= 2.
 
-            else:
-                raise Exception()
+        elif MODE == 'lsgan':
+            gen_cost = tf.reduce_mean((disc_fake - 1)**2)
+            disc_cost = (tf.reduce_mean((disc_real - 1)**2) + tf.reduce_mean((disc_fake - 0)**2))/2.
 
-            # add L1 difference to penalty
-            fake_data_downsampled = downsample(fake_data)
-            gen_l1_cost = tf.reduce_mean(
-                tf.abs(fake_data_downsampled - real_data_downsampled))
+        else:
+            raise Exception()
 
-            gen_l1_costs.append(gen_l1_cost)
-            gen_gan_costs.append(gen_cost)
+        # add L1 difference to penalty
+        fake_data_downsampled = downsample(fake_data)
+        gen_l1_cost = tf.reduce_mean(
+            tf.abs(fake_data_downsampled - real_data_downsampled))
 
-            gen_cost = GEN_L1_WEIGHT * gen_l1_cost + (1 - GEN_L1_WEIGHT) * gen_cost
+        gen_l1_costs.append(gen_l1_cost)
+        gen_gan_costs.append(gen_cost)
 
-            gen_costs.append(gen_cost)
-            disc_costs.append(disc_cost)
+        gen_cost = GEN_L1_WEIGHT * gen_l1_cost + (1 - GEN_L1_WEIGHT) * gen_cost
+
+        gen_costs.append(gen_cost)
+        disc_costs.append(disc_cost)
 
     gen_cost = tf.add_n(gen_costs) / len(DEVICES)
     disc_cost = tf.add_n(disc_costs) / len(DEVICES)
@@ -641,7 +643,7 @@ with tf.Session(config=tf.ConfigProto(allow_soft_placement=True)) as session:
 
 
     # Dataset iterator and test set (for visualization) 
-    train_gen, test_data = lib.celebA_64x64.load(BATCH_SIZE, data_dir=DATA_DIR)
+    train_gen, test_data = lib.fruit_100x100.load(BATCH_SIZE, data_dir=DATA_DIR, test_dir=TEST_DIR)
     #train_gen, dev_gen = lib.small_imagenet.load(BATCH_SIZE, data_dir=DATA_DIR)
 
     def inf_train_gen():
@@ -653,7 +655,7 @@ with tf.Session(config=tf.ConfigProto(allow_soft_placement=True)) as session:
     _x = next(inf_train_gen())
     _x_r = session.run(real_data, feed_dict={real_data_conv: _x})
     _x_r = ((_x_r+1.)*(255.99/2)).astype('int32')
-    lib.save_images.save_images(_x_r.reshape((BATCH_SIZE, 3, 64, 64)), 'samples_groundtruth.png')
+    lib.save_images.save_images(_x_r.reshape((BATCH_SIZE, 3, image_size, image_size)), 'samples_groundtruth.png')
 
     # Train loop
     merged_scalars = tf.summary.merge_all(key='scalars')

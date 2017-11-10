@@ -6,7 +6,7 @@ L1_WEIGHT=0.1
 MODEL=wgan
 ARCH=5 # 0: DCGAN, 1: DCGAN-BN, 2: MLP
 
-python3 gan_SR.py \
+python3 gan_fruit.py \
        --mode=$MODEL \
        --architecture=$ARCH \
        --summary_dir=summary/$RUNNUM \
