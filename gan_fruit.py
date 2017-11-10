@@ -14,12 +14,12 @@ import tflib.ops.conv2d
 import tflib.ops.batchnorm
 import tflib.ops.deconv2d
 import tflib.save_images
-import tflib.fruit_100x100
+import tflib.fruit_128x128
 import tflib.small_imagenet
 import tflib.ops.layernorm
 import tflib.plot
 
-image_size = 100
+image_size = 128
 FLAGS = tf.app.flags.FLAGS
 
 # Configurations
@@ -50,12 +50,12 @@ LAMBDA = FLAGS.LAMBDA # Gradient penalty lambda hyperparameter
 if len(DATA_DIR) == 0:
     raise Exception('Please specify path to data directory in gan_64x64.py!')
 
-DIM = 100 # Model dimensionality
+DIM = 128 # Model dimensionality
 K = 4 # How much to downsample
 CRITIC_ITERS = 5 # How many iterations to train the critic for
 N_GPUS = 1 # Number of GPUs
 BATCH_SIZE = 16 # Batch size. Must be a multiple of N_GPUS
-INPUT_DIM = 16*16*3 # Number of pixels in each input
+INPUT_DIM = 32*32*3 # Number of pixels in each input
 OUTPUT_DIM = image_size*image_size*3 # Number of pixels in each iamge
 DELETE_TRAIN_DIR=True
 
@@ -643,7 +643,7 @@ with tf.Session(config=tf.ConfigProto(allow_soft_placement=True)) as session:
 
 
     # Dataset iterator and test set (for visualization) 
-    train_gen, test_data = lib.fruit_100x100.load(BATCH_SIZE, data_dir=DATA_DIR, test_dir=TEST_DIR)
+    train_gen, test_data = lib.fruit_128x128.load(BATCH_SIZE, data_dir=DATA_DIR, test_dir=TEST_DIR)
     #train_gen, dev_gen = lib.small_imagenet.load(BATCH_SIZE, data_dir=DATA_DIR)
 
     def inf_train_gen():

@@ -7,13 +7,13 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm
 
 channels = 3
-image_size = 64
+image_size = 128
 # The feature is simply a Kx downscaled version
 # K = 4
 # image_size_k = image_size // K
 
-input_dir = 'img_align_celeba'
-output_dir = 'celebA_64x64'
+input_dir = './fruitrecogndatasetnew/002orange/train'
+output_dir = './fruitrecogndatasetnew/002orange/train1'
 
 
 with tf.Session() as sess:
@@ -23,6 +23,7 @@ with tf.Session() as sess:
     image = tf.image.random_brightness(image, .05)
     image = tf.image.random_contrast(image, .95, 1.05)
 
+    """
     wiggle = 8
     off_x, off_y = 25-wiggle, 60-wiggle
     crop_size = 128
@@ -36,6 +37,9 @@ with tf.Session() as sess:
 
     image_resize = tf.reshape(image, [image_size, image_size, 3])
     image_resize = tf.cast(image_resize, tf.uint8)
+    """
+
+    image_resize = tf.image.resize_images(image, [image_size, image_size])
     # read files
     input_files = tf.gfile.ListDirectory(input_dir)
     input_files = sorted(input_files)

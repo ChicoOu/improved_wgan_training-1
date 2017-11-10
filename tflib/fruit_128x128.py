@@ -3,7 +3,7 @@ import scipy.misc
 import time
 import os
 
-image_size = 100
+image_size = 128
 test_size = 50
 
 
