@@ -340,7 +340,7 @@ def MultiplicativeDCGANGenerator(n_samples, noise=None, dim=DIM, bn=True, input_
 # ! Discriminators
 
 def MultiplicativeDCGANDiscriminator(inputs, dim=DIM, bn=True):
-    output = tf.reshape(inputs, [-1, 3, 64, 64])
+    output = tf.reshape(inputs, [-1, 3, image_size, image_size])
 
     output = lib.ops.conv2d.Conv2D('Discriminator.1', 3, dim*2, 5, output, stride=2)
     output = pixcnn_gated_nonlinearity(output[:,::2], output[:,1::2])
@@ -367,7 +367,7 @@ def MultiplicativeDCGANDiscriminator(inputs, dim=DIM, bn=True):
 
 
 def ResnetDiscriminator(inputs, dim=DIM):
-    output = tf.reshape(inputs, [-1, 3, 64, 64])
+    output = tf.reshape(inputs, [-1, 3, image_size, image_size])
     output = lib.ops.conv2d.Conv2D('Discriminator.In', 3, dim//2, 1, output, he_init=False)
 
     for i in range(5):

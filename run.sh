@@ -3,7 +3,7 @@ RUNNUM=8
 RUNTIME=600
 ITER=100000
 L1_WEIGHT=0.1
-MODEL=wgan
+MODEL=wgan-gp
 ARCH=5 # 0: DCGAN, 1: DCGAN-BN, 2: MLP
 
 python3 gan_fruit.py \
