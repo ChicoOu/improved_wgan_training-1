@@ -640,8 +640,6 @@ with tf.Session(config=tf.ConfigProto(allow_soft_placement=True)) as session:
 
         
 
-
-
     # Dataset iterator and test set (for visualization) 
     train_gen, test_data = lib.fruit_128x128.load(BATCH_SIZE, data_dir=DATA_DIR, test_dir=TEST_DIR)
     #train_gen, dev_gen = lib.small_imagenet.load(BATCH_SIZE, data_dir=DATA_DIR)

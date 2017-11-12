@@ -4,7 +4,7 @@ import time
 import os
 
 image_size = 128
-test_size = 50
+test_size = 16
 
 
 def make_generator(data_dir, n_files, batch_size):

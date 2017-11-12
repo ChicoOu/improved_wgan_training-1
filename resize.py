@@ -3,7 +3,7 @@ import random
 import os
 from scipy.misc import imread, imsave
 import numpy as np
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 from tqdm import tqdm
 
 channels = 3
