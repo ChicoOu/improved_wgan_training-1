@@ -34,12 +34,10 @@ tf.app.flags.DEFINE_float('LAMBDA', 10., "gradient penalty lambda parameter")
 tf.app.flags.DEFINE_float('gen_l1_weight', 0.9, "weight of L1 difference in generator loss")
 tf.app.flags.DEFINE_integer('architecture', 0, "index of architecture")
 
-# Download 64x64 ImageNet at http://image-net.org/small/download.php and
-# fill in the path to the extracted files here!
 #import sys
 #FLAGS(sys.argv)
 TEST_DIR = './fruitrecogndatasetnew/002orange/test'
-DATA_DIR = FLAGS.data_dir  # 'data/celebA_64X64'
+DATA_DIR = FLAGS.data_dir  # 'data/celebA_128X128'
 SUMMARY_DIR = FLAGS.summary_dir
 GEN_L1_WEIGHT = FLAGS.gen_l1_weight # Weighting factor for L1 difference in generator loss
 TRAIN_DIR = FLAGS.train_dir # Directory to output image
@@ -48,7 +46,7 @@ ITERS = FLAGS.max_iter # How many iterations to train for
 LAMBDA = FLAGS.LAMBDA # Gradient penalty lambda hyperparameter
 
 if len(DATA_DIR) == 0:
-    raise Exception('Please specify path to data directory in gan_64x64.py!')
+    raise Exception('Please specify path to data directory in gan_128x128.py!')
 
 DIM = 128 # Model dimensionality
 K = 4 # How much to downsample
@@ -299,7 +297,7 @@ def ResnetGenerator(n_samples, noise=None, dim=DIM, input_dim=INPUT_DIM):
         output = ResidualBlock('Generator.32x32_{}'.format(i), 1*dim, 1*dim, 3, output, resample=None)
     output = ResidualBlock('Generator.Up4', 1*dim, dim//2, 3, output, resample='up')
     for i in range(5):
-        output = ResidualBlock('Generator.64x64_{}'.format(i), dim/2, dim/2, 3, output, resample=None)
+        output = ResidualBlock('Generator.128x128_{}'.format(i), dim/2, dim/2, 3, output, resample=None)
 
     output = lib.ops.conv2d.Conv2D('Generator.Out', dim//2, 3, 1, output, he_init=False)
     output = tf.tanh(output / 5.)
@@ -371,7 +369,7 @@ def ResnetDiscriminator(inputs, dim=DIM):
     output = lib.ops.conv2d.Conv2D('Discriminator.In', 3, dim//2, 1, output, he_init=False)
 
     for i in range(5):
-        output = ResidualBlock('Discriminator.64x64_{}'.format(i), dim/2, dim/2, 3, output, resample=None)
+        output = ResidualBlock('Discriminator.128x128_{}'.format(i), dim/2, dim/2, 3, output, resample=None)
     output = ResidualBlock('Discriminator.Down1', dim//2, dim*1, 3, output, resample='down')
     for i in range(6):
         output = ResidualBlock('Discriminator.32x32_{}'.format(i), dim*1, dim*1, 3, output, resample=None)
